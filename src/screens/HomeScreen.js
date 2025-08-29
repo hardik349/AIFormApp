@@ -1,22 +1,33 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import {
   Alert,
-  Button,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from 'react-native';
-import { View } from 'react-native';
+
 import metrics from '../theme/metrics';
 import Feather from 'react-native-vector-icons/Feather';
-
-import Voice from '@react-native-voice/voice';
-
+import { parseWithAI } from '../utils/parseWithAI';
+import useVoiceRecognition from '../utils/useVoiceRecognition';
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');
+
+  const handleSpeechRecognized = async spokenText => {
+    console.log('Heard (in HomeScreen):', spokenText);
+    const parsed = await parseWithAI(spokenText);
+    console.log('Parsed (in HomeScreen):', parsed);
+    if (parsed.userName) setUserName(parsed.userName);
+  };
+
+  const { listening, startListening, stopListening } = useVoiceRecognition(
+    handleSpeechRecognized,
+  );
 
   const handleContinue = () => {
     if (userName.trim() === '') {
@@ -38,10 +49,11 @@ const HomeScreen = () => {
       />
 
       <View style={styles.bottomView}>
-        <View style={styles.buttonView}>
-          <Feather name="mic" size={22} color="white" />
-        </View>
-
+        <TouchableOpacity onPress={listening ? stopListening : startListening}>
+          <View style={styles.buttonView}>
+            <Feather name="mic" size={22} color="white" />
+          </View>
+        </TouchableOpacity>
         <TouchableOpacity onPress={handleContinue}>
           <View style={styles.buttonView}>
             <Feather name="arrow-right" size={22} color="white" />
@@ -62,7 +74,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: metrics.moderateScale(20),
   },
-
   textInput: {
     fontSize: metrics.moderateScale(17),
     fontFamily: 'Raleway-Medium',

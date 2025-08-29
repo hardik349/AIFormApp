@@ -1,40 +1,84 @@
-import React, { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Button, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import metrics from '../theme/metrics';
-
+import { parseWithAI } from '../utils/parseWithAI';
+import useVoiceRecognition from '../utils/useVoiceRecognition';
+import { launchCamera } from 'react-native-image-picker';
 const InspectionForm = ({ route }) => {
   const { userName } = route.params;
 
-  const [name, setName] = useState('');
+  const [buildingName, setBuildingName] = useState('');
   const [address, setAddress] = useState('');
   const [dateTime, setDateTime] = useState('');
-  const [listening, setListening] = useState(false);
+  const [photo, setPhoto] = useState(null);
 
-  const stopListening = async () => {
-    setListening(false);
-    await Voice.stop();
+  const handleSpeechRecognized = async spokenText => {
+    console.log('Heard (in InspectionForm):', spokenText);
+    const parsed = await parseWithAI(spokenText);
+    console.log('Parsed (in InspectionForm):', parsed);
+    if (parsed.buildingName) setBuildingName(parsed.buildingName);
+    if (parsed.address) setAddress(parsed.address);
+    if (parsed.dateTime) setDateTime(parsed.dateTime);
+  };
+
+  const { listening, startListening, stopListening } = useVoiceRecognition(
+    handleSpeechRecognized,
+  );
+
+  const handleOpenCamera = () => {
+    launchCamera(
+      {
+        mediaType: 'mixed',
+        cameraType: 'back',
+        saveToPhotos: true,
+      },
+      response => {
+        if (response.didCancel) {
+          console.log('User cancelled camera');
+        } else if (response.errorCode) {
+          console.log('Camera Error: ', response.errorMessage);
+        } else {
+          const uri = response.assets?.[0]?.uri;
+          if (uri) setPhoto(uri);
+        }
+      },
+    );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>WELCOME, {userName.toUpperCase()}!</Text>
-      <Text style={styles.text}>Enter your name</Text>
+      <Text style={styles.title}>WELCOME, {userName.toUpperCase()}</Text>
+      <Text style={styles.text}>Enter Building Name</Text>
 
       <TextInput
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
+        placeholder="Building Name"
+        value={buildingName}
+        onChangeText={setBuildingName}
         style={styles.textInput}
       />
-
-      <Text style={styles.text}>Enter your address</Text>
-
+      <Text style={styles.text}>Enter Address</Text>
       <TextInput
         placeholder="Address"
         value={address}
         onChangeText={setAddress}
         style={styles.textInput}
       />
+      <Text style={styles.text}>Enter Date/Time</Text>
+      <TextInput
+        placeholder="Date & Time"
+        value={dateTime}
+        onChangeText={setDateTime}
+        style={styles.textInput}
+      />
+      <Text style={styles.text}>Add Image</Text>
+      {photo && (
+        <Image
+          source={{ uri: photo }}
+          style={styles.imagePreview}
+          resizeMode="cover"
+        />
+      )}
+      <Button title="📷 Open Camera" onPress={handleOpenCamera} />
 
       <Button
         title={listening ? 'Listening...' : '🎤 Start Voice Fill'}
@@ -51,14 +95,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffffff',
     alignItems: 'flex-start',
-    justifyContent: 'center',
     padding: metrics.moderateScale(20),
   },
 
   title: {
-    fontSize: metrics.moderateScale(20),
+    fontSize: metrics.moderateScale(25),
     fontFamily: 'Raleway-Bold',
     marginTop: metrics.verticalScale(10),
+    marginBottom: metrics.verticalScale(40),
   },
 
   textInput: {
@@ -71,9 +115,17 @@ const styles = StyleSheet.create({
     marginTop: metrics.verticalScale(8),
     paddingHorizontal: metrics.verticalScale(8),
   },
+
   text: {
     fontSize: metrics.moderateScale(14),
     fontFamily: 'Raleway-Bold',
-    marginTop: metrics.verticalScale(10),
+    marginTop: metrics.verticalScale(15),
+  },
+
+  imagePreview: {
+    width: 200,
+    height: 200,
+    marginTop: 10,
+    borderRadius: 10,
   },
 });
