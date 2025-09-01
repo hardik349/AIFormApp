@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Import useRef
 import {
   View,
   Text,
@@ -8,62 +8,180 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useVoiceExtractor } from '../Hook/useVoiceExtractor';
 import metrics from '../theme/metrics';
 
 import Feather from 'react-native-vector-icons/Feather';
+import Entypo from 'react-native-vector-icons/Entypo';
+import { launchCamera } from 'react-native-image-picker';
 
 const FormScreen = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const { inspectorName } = route.params || {};
+
   const [info, setInfo] = useState({
     name: '',
     address: '',
     building: '',
     date: '',
   });
+
   const [filled, setFilled] = useState({
-    name: false,
-    address: false,
-    building: false,
-    date: false,
+    name: 'initial',
+    address: 'initial',
+    building: 'initial',
+    date: 'initial',
   });
+
   const { isListening, extractedData, startListening, stopListening } =
     useVoiceExtractor(
       'Extract in JSON: { "name": "...", "address": "...", "building": "...", "date": "..." }',
     );
+
+  const timeoutRef = useRef(null);
+
+  const setupAutoStopTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      console.log('⏱️ Auto-stop timeout reached, stopping mic...');
+      stopListening();
+      setFilled(currentStatus => {
+        const newStatus = { ...currentStatus };
+        for (const key in info) {
+          if (newStatus[key] === 'initial') {
+            newStatus[key] = info[key] ? 'filled' : 'empty';
+          }
+        }
+        return newStatus;
+      });
+    }, 15000);
+  };
+
+  const allFilled = Object.values(filled).every(status => status === 'filled');
+
+  useEffect(() => {
+    const autoStartMic = async () => {
+      await startListening();
+      setupAutoStopTimeout();
+    };
+
+    autoStartMic();
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      stopListening();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isListening) {
+      setupAutoStopTimeout();
+    } else {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }
+  }, [isListening]); // Rerun this effect whenever isListening changes
+
+  const handleOpenCamera = () => {
+    launchCamera(
+      {
+        mediaType: 'photo',
+        cameraType: 'back',
+        saveToPhotos: true,
+      },
+      response => {
+        if (response.didCancel) {
+          console.log('User cancelled camera');
+        } else if (response.errorCode) {
+          console.log('Camera Error: ', response.errorMessage);
+        } else {
+          const uri = response.assets?.[0]?.uri;
+          if (uri) setPhoto(uri); // Assuming setPhoto state exists
+        }
+      },
+    );
+  };
+
   useEffect(() => {
     if (extractedData) {
       console.log('📋 Form Extracted:', extractedData);
-      setInfo(prev => ({
-        ...prev,
-        name: extractedData.name || prev.name,
-        address: extractedData.address || prev.address,
-        building: extractedData.building || prev.building,
-        date: extractedData.date || prev.date,
-      }));
-      setFilled({
-        name: !!extractedData.name,
-        address: !!extractedData.address,
-        building: !!extractedData.building,
-        date: !!extractedData.date,
+      setInfo(prev => {
+        const newInfo = {
+          ...prev,
+          name: extractedData.name || prev.name,
+          address: extractedData.address || prev.address,
+          building: extractedData.building || prev.building,
+          date: extractedData.date || prev.date,
+        };
+
+        setFilled(currentStatus => {
+          const newStatus = { ...currentStatus };
+          for (const key in extractedData) {
+            if (extractedData[key]) {
+              newStatus[key] = 'filled';
+            } else if (newStatus[key] === 'initial') {
+              newStatus[key] = newInfo[key] ? 'filled' : 'empty';
+            }
+          }
+          return newStatus;
+        });
+        return newInfo;
       });
     }
   }, [extractedData]);
-  const renderInput = (field, label, value, onChange, filledFlag) => (
+
+  useEffect(() => {
+    for (const key in info) {
+      if (filled[key] === 'empty' || filled[key] === 'initial') {
+        if (info[key]) {
+          setFilled(prev => ({ ...prev, [key]: 'filled' }));
+        } else if (filled[key] === 'initial' && !info[key]) {
+          setFilled(prev => ({ ...prev, [key]: 'empty' }));
+        }
+      }
+    }
+  }, [info]);
+
+  const handleMicButtonPress = () => {
+    if (isListening) {
+      stopListening();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    } else {
+      startListening();
+      setupAutoStopTimeout();
+    }
+  };
+
+  const renderInput = (field, label, value, onChange, status) => (
     <View style={styles.inputContainer}>
       <Text style={styles.text}>{field}</Text>
-      <TextInput
-        style={styles.textInput}
-        placeholder={label}
-        placeholderTextColor={'black'}
-        value={value}
-        onChangeText={onChange}
-      />
-      {filledFlag && <Text style={styles.tick}>✅</Text>}
+      <View style={styles.fieldContainer}>
+        <TextInput
+          style={styles.textInput}
+          placeholder={label}
+          placeholderTextColor={'black'}
+          value={value}
+          onChangeText={onChange}
+        />
+        {status === 'filled' && (
+          <Feather name="check" color="green" size={20} />
+        )}
+        {status === 'empty' && <Entypo name="cross" color="red" size={23} />}
+      </View>
     </View>
   );
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>
@@ -102,7 +220,7 @@ const FormScreen = () => {
       <View style={styles.bottomView}>
         <TouchableOpacity
           style={styles.buttonView}
-          onPress={isListening ? stopListening : startListening}
+          onPress={handleMicButtonPress}
         >
           <Feather
             name={isListening ? 'mic' : 'mic-off'}
@@ -110,16 +228,24 @@ const FormScreen = () => {
             size={22}
           />
         </TouchableOpacity>
-        <TouchableOpacity>
-          <View style={styles.buttonView}>
-            <Feather name="arrow-right" size={22} color="white" />
-          </View>
-        </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Image')}
+        style={[
+          styles.nextButtonView,
+          !allFilled && { backgroundColor: '#979797ff' },
+        ]}
+        disabled={!allFilled}
+      >
+        <Text style={styles.buttonText}>Add Images</Text>
+        <Feather name="arrow-right" size={22} color="white" />
+      </TouchableOpacity>
     </ScrollView>
   );
 };
 export default FormScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -142,6 +268,12 @@ const styles = StyleSheet.create({
     opacity: metrics.moderateScale(0.6),
   },
 
+  buttonText: {
+    fontSize: metrics.moderateScale(17),
+    fontFamily: 'Raleway-Bold',
+    color: 'white',
+  },
+
   buttonView: {
     borderRadius: metrics.moderateScale(12),
     backgroundColor: '#000000',
@@ -149,27 +281,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: metrics.moderateScale(25),
   },
 
-  bottomView: {
+  nextButtonView: {
     flexDirection: 'row',
-    marginTop: metrics.moderateScale(30),
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    borderRadius: metrics.moderateScale(12),
+    backgroundColor: '#000000',
+    paddingVertical: metrics.moderateScale(14),
+    paddingHorizontal: metrics.moderateScale(35),
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+
+  bottomView: {
+    flexDirection: 'row',
+    marginTop: metrics.moderateScale(20),
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     width: '100%',
   },
 
   inputContainer: {
     width: '100%',
-    marginBottom: 10,
+    marginBottom: metrics.verticalScale(10),
+  },
+
+  fieldContainer: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    borderRadius: metrics.moderateScale(13),
+    padding: metrics.moderateScale(2),
+    marginTop: metrics.moderateScale(7),
   },
   textInput: {
     fontSize: metrics.moderateScale(17),
     fontFamily: 'Raleway-Medium',
     borderRadius: 10,
-    borderBottomWidth: 1,
-    borderWidth: 1,
-    width: '100%',
-    marginTop: metrics.verticalScale(8),
+    borderBottomWidth: 0,
+    borderWidth: 0,
+    width: '90%',
     paddingHorizontal: metrics.verticalScale(8),
+    marginEnd: metrics.verticalScale(5),
   },
-  tick: { marginLeft: 10, fontSize: 18 },
+  tick: { fontSize: 18 },
+  cross: { fontSize: 18, color: 'red' },
 });

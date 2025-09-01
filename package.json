@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-native-voice/voice": "github:react-native-community/voice",
     "@react-native/new-app-screen": "0.81.0",
     "@react-navigation/native": "^7.1.17",

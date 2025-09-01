@@ -42,11 +42,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: metrics.moderateScale(20),
   },
 
-  bottomView: {
-    flexDirection: 'row',
-    marginTop: metrics.moderateScale(30),
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
+  
 });

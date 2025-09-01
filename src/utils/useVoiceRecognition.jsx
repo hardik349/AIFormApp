@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import Voice from '@react-native-voice/voice';
 const useVoiceRecognition = onSpeechRecognized => {
+
   const [listening, setListening] = useState(false);
   const onSpeechRecognizedRef = useRef(onSpeechRecognized);
+  
   useEffect(() => {
     onSpeechRecognizedRef.current = onSpeechRecognized;
   }, [onSpeechRecognized]);
+  
   useEffect(() => {
     const handleSpeechResults = e => {
       const spokenText = e.value?.[0] || '';
@@ -23,6 +26,7 @@ const useVoiceRecognition = onSpeechRecognized => {
       Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
+  
   const startListening = async () => {
     try {
       setListening(true);
@@ -32,6 +36,7 @@ const useVoiceRecognition = onSpeechRecognized => {
       setListening(false);
     }
   };
+  
   const stopListening = async () => {
     try {
       setListening(false);

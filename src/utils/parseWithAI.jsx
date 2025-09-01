@@ -1,7 +1,9 @@
 import OpenAI from 'openai';
-import { OPENAI_API_KEY } from '@env';
 
-const client = new OpenAI({ apiKey: OPENAI_API_KEY });
+const client = new OpenAI({
+  apiKey:
+    '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',
+});
 
 export async function parseWithAI(text) {
   try {

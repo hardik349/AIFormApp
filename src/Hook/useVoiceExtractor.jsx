@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import Voice from '@react-native-voice/voice';
 
-const OPENAI_API_KEY = '';
+const OPENAI_API_KEY =
+  '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';
+
 export const useVoiceExtractor = schemaPrompt => {
   const [isListening, setIsListening] = useState(false);
   const [extractedData, setExtractedData] = useState({});
