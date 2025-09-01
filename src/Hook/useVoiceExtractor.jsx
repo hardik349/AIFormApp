@@ -58,8 +58,16 @@ export const useVoiceExtractor = schemaPrompt => {
   const startListening = async () => {
     try {
       setIsListening(true);
-      // 👉 listener yahi bind karenge
+
       Voice.onSpeechResults = handleResults;
+      Voice.onSpeechEnd = () => {
+        console.log('🎤 Speech ended');
+        setIsListening(false);
+      };
+      Voice.onSpeechError = err => {
+        console.log('❌ Speech error', err);
+        setIsListening(false);
+      };
       await Voice.start('en-US');
     } catch (error) {
       console.error('❌ Voice Start Error:', error);
@@ -70,7 +78,7 @@ export const useVoiceExtractor = schemaPrompt => {
     try {
       await Voice.stop();
       setIsListening(false);
-      // 👉 stop pe cleanup
+
       Voice.destroy().then(Voice.removeAllListeners);
     } catch (error) {
       console.error('❌ Voice Stop Error:', error);
