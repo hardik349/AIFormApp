@@ -24,6 +24,7 @@ const WelcomeScreen2 = () => {
     isListening,
     extractedData,
     errorMsg,
+    setErrorMsg,
     startListening,
     stopListening,
   } = useVoiceExtractor(
@@ -45,6 +46,13 @@ const WelcomeScreen2 = () => {
       setProcessing(false);
     }
   }, [extractedData]);
+
+  useEffect(() => {
+    if (errorMsg) {
+      const timer = setTimeout(() => setErrorMsg(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMsg]);
 
   const goToForm = () => {
     if (inspectorName.trim() !== '') {

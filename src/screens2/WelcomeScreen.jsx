@@ -1,95 +1,3 @@
-//import React, { useState, useEffect } from 'react';
-// import {
-//   StyleSheet,
-//   Text,
-//   View,
-//   TextInput,
-//   Button,
-//   TouchableOpacity,
-// } from 'react-native';
-// import { useNavigation } from '@react-navigation/native';
-// import { useVoiceExtractor } from '../Hook/useVoiceExtractor';
-
-// const WelcomeScreen = () => {
-//   const navigation = useNavigation();
-//   const [inspectorName, setInspectorName] = useState('');
-
-//   const { isListening, extractedData, startListening, stopListening } =
-//     useVoiceExtractor('Extract ONLY inspector name in JSON: { "name": "..." }');
-
-//   useEffect(() => {
-//     if (extractedData?.name) {
-//       console.log('👮 Inspector detected:', extractedData.name);
-//       setInspectorName(extractedData.name);
-//     }
-//   }, [extractedData]);
-
-//   const goToForm = () => {
-//     if (inspectorName.trim() !== '') {
-//       navigation.navigate('Form', { inspectorName });
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>👮 Welcome Inspector</Text>
-
-//       <View style={styles.inputRow}>
-//         <TextInput
-//           style={styles.input}
-//           placeholder="Inspector Name"
-//           value={inspectorName}
-//           onChangeText={setInspectorName}
-//           placeholderTextColor={'black'}
-//         />
-
-//         <TouchableOpacity
-//           style={styles.micButton}
-//           onPress={isListening ? stopListening : startListening}
-//         >
-//           <Text style={{ fontSize: 20 }}>{isListening ? '🛑' : '🎤'}</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       <Button title="Go to Form" onPress={goToForm} />
-//     </View>
-//   );
-// };
-
-// export default WelcomeScreen;
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 20,
-//   },
-//   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-//   inputRow: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     width: '80%',
-//     marginBottom: 20,
-//   },
-//   input: {
-//     flex: 1,
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     padding: 12,
-//     borderRadius: 8,
-//     fontSize: 16,
-//     backgroundColor: '#f9f9f9',
-//     color: 'black',
-//   },
-//   micButton: {
-//     marginLeft: 10,
-//     padding: 10,
-//     backgroundColor: '#eee',
-//     borderRadius: 50,
-//   },
-// });
-
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -122,7 +30,6 @@ const WelcomeScreen = () => {
     }
   }, [extractedData]);
 
-  // 👉 Screen mount hote hi mic start
   useEffect(() => {
     let timeoutId;
 
