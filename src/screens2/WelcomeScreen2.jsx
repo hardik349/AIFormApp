@@ -27,7 +27,7 @@ const WelcomeScreen2 = () => {
     startListening,
     stopListening,
   } = useVoiceExtractor(
-    `You are a strict JSON extractor. Extract ONLY inspector name in JSON. Example: { "name": "Ajay" }`,
+    `You are a strict JSON extractor and multilingual. Extract ONLY inspector name in JSON. Example: { "name": "Ajay" }`,
   );
 
   useEffect(() => {
