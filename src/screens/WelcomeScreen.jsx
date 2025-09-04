@@ -14,7 +14,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useVoiceExtractor } from '../Hook/useVoiceExtractor';
 import metrics from '../theme/metrics';
 
-const WelcomeScreen2 = () => {
+const WelcomeScreen = () => {
   const navigation = useNavigation();
   const [inspectorName, setInspectorName] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -30,6 +30,14 @@ const WelcomeScreen2 = () => {
   } = useVoiceExtractor(
     `You are a strict JSON extractor. Extract ONLY inspector name in JSON. Example: { "name": "Ajay" }`,
   );
+
+  useEffect(() => {
+    startListening();
+    const timer = setTimeout(() => {
+      stopListening();
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!isListening && !extractedData?.name) {
@@ -141,7 +149,7 @@ const WelcomeScreen2 = () => {
   );
 };
 
-export default WelcomeScreen2;
+export default WelcomeScreen;
 
 const styles = StyleSheet.create({
   container: {

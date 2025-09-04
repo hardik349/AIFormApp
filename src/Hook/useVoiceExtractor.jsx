@@ -1,24 +1,16 @@
 import { useEffect, useState } from 'react';
 import Voice from '@react-native-voice/voice';
-import NetInfo from '@react-native-community/netinfo';
 
 const OPENAI_API_KEY = '';
 
 export const useVoiceExtractor = schemaPrompt => {
   const [isListening, setIsListening] = useState(false);
   const [extractedData, setExtractedData] = useState({});
-  const [errorMsg, setErrorMsg] = useState('');
 
   const handleResults = async result => {
     if (result?.value?.length > 0) {
       const spokenText = result.value[0];
-      console.log(' Speech:', spokenText);
-
-      const state = await NetInfo.fetch();
-      if (!state.isConnected) {
-        setErrorMsg('No internet connection');
-        return;
-      }
+      console.log('🎤 Speech:', spokenText);
 
       try {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -55,47 +47,30 @@ export const useVoiceExtractor = schemaPrompt => {
           }
         }
 
-        console.log(' Extracted JSON:', extracted);
+        console.log('✅ Extracted JSON:', extracted);
         setExtractedData(extracted);
-        setErrorMsg('');
       } catch (err) {
-        console.error(' API Error:', err);
+        console.error('❌ API Error:', err);
       }
     }
   };
 
-  // const startListening = async () => {
-  //   try {
-  //     setIsListening(true);
-
-  //     Voice.onSpeechResults = handleResults;
-  //     Voice.onSpeechEnd = () => setIsListening(false);
-  //     Voice.onSpeechError = () => setIsListening(false);
-  //     await Voice.start('en-US');
-  //   } catch (error) {
-  //     console.error(' Voice Start Error:', error);
-  //     setErrorMsg('Voice recognition failed');
-  //   }
-  // };
-
   const startListening = async () => {
     try {
-      const state = await NetInfo.fetch();
-      if (!state.isConnected) {
-        setErrorMsg('No internet connection');
-        return; // stop here, don't start Voice
-      }
-
       setIsListening(true);
-      setErrorMsg(''); // clear any previous error
 
       Voice.onSpeechResults = handleResults;
-      Voice.onSpeechEnd = () => setIsListening(false);
-      Voice.onSpeechError = () => setIsListening(false);
+      Voice.onSpeechEnd = () => {
+        console.log('🎤 Speech ended');
+        setIsListening(false);
+      };
+      Voice.onSpeechError = err => {
+        console.log('❌ Speech error', err);
+        setIsListening(false);
+      };
       await Voice.start('en-US');
     } catch (error) {
-      console.error('Voice Start Error:', error);
-      setErrorMsg('Voice recognition failed');
+      console.error('❌ Voice Start Error:', error);
     }
   };
 
@@ -106,22 +81,16 @@ export const useVoiceExtractor = schemaPrompt => {
 
       Voice.destroy().then(Voice.removeAllListeners);
     } catch (error) {
-      console.error(' Voice Stop Error:', error);
+      console.error('❌ Voice Stop Error:', error);
     }
   };
 
+  // screen change hone pe cleanup
   useEffect(() => {
     return () => {
       Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
 
-  return {
-    isListening,
-    extractedData,
-    errorMsg,
-    setErrorMsg,
-    startListening,
-    stopListening,
-  };
+  return { isListening, extractedData, startListening, stopListening };
 };
