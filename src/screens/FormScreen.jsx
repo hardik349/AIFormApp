@@ -22,9 +22,11 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { launchCamera } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const { width } = Dimensions.get('window');
 const FormScreen = () => {
-  const [currentField, setCurrentField] = useState(0); // 0: builderName, 1: address, etc.
+  const [currentField, setCurrentField] = useState(0);
   const [formData, setFormData] = useState({
     builderName: '',
     address: '',
@@ -32,6 +34,7 @@ const FormScreen = () => {
     date: '',
     images: [],
   });
+
   const navigation = useNavigation();
 
   const [micStatus, setMicStatus] = useState('idle');
@@ -96,7 +99,7 @@ const FormScreen = () => {
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      const formatted = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const formatted = selectedDate.toISOString().split('T')[0];
       setFormData(prev => ({
         ...prev,
         date: formatted,
@@ -104,7 +107,6 @@ const FormScreen = () => {
     }
   };
 
-  // ⬇️ When voice extractor gives result, auto-fill the current field
   useEffect(() => {
     if (!extractedData) return;
 
@@ -112,15 +114,15 @@ const FormScreen = () => {
       const command = extractedData.command.toLowerCase();
       if (command.includes('open camera')) {
         handleOpenCamera();
-        stopListening?.(); // ✅ stop listening immediately
-        setMicStatus('idle'); // ✅ prevent timeout reset
+        stopListening?.();
+        setMicStatus('idle');
         return;
       }
     }
 
     if (
       extractedData[currentFieldData.key] &&
-      currentFieldData.key !== 'images' && // not for image field
+      currentFieldData.key !== 'images' &&
       formData[currentFieldData.key] !== extractedData[currentFieldData.key]
     ) {
       setFormData(prev => ({
@@ -136,7 +138,6 @@ const FormScreen = () => {
     if (currentField < fields.length - 1) {
       setCurrentField(currentField + 1);
     } else {
-      // All fields filled, submit form
       alert('Form submitted! ' + JSON.stringify(formData));
       console.log('Form Data:', formData);
     }
