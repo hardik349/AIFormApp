@@ -99,6 +99,7 @@ const BottomTabs = () => {
           elevation: 0,
           borderTopWidth: 1,
           justifyContent: 'center',
+
           height: metrics.moderateScale(64),
         },
         tabBarBackground: () => (
@@ -127,8 +128,8 @@ const BottomTabs = () => {
             />
           );
         },
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: '#aaa',
+        tabBarActiveTintColor: '#A099FF',
+        tabBarInactiveTintColor: '#7d7d7dff',
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />

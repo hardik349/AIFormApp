@@ -43,11 +43,13 @@ const HomeScreen = () => {
       </View>
       <TouchableOpacity style={styles.viewMore}>
         <Text style={styles.viewText}>View More</Text>
-        <Feather
-          name="more-horizontal"
-          size={metrics.moderateScale(18)}
-          color="#9b8ef9"
-        />
+        <View style={styles.viewMoreIcon}>
+          <Feather
+            name="more-horizontal"
+            size={metrics.moderateScale(14)}
+            color="black"
+          />
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -75,12 +77,14 @@ const HomeScreen = () => {
         style={styles.gradientCard}
       >
         <View style={styles.gradientContent}>
-          <Feather
-            name="list"
-            size={metrics.moderateScale(26)}
-            color="#000"
-            style={styles.cardIcon}
-          />
+          <View style={styles.cardIconContainer}>
+            <Feather
+              name="list"
+              size={metrics.moderateScale(24)}
+              color="#96EDC3"
+              style={styles.cardIcon}
+            />
+          </View>
           <View>
             <Text style={styles.cardTitle}>Add New Record</Text>
             <Text style={styles.cardSubtitle}>
@@ -96,8 +100,13 @@ const HomeScreen = () => {
       {/* Recent Records */}
       <View style={styles.recordsHeader}>
         <Text style={styles.recordsTitle}>Recent Records</Text>
-        <TouchableOpacity>
-          <Text style={styles.seeAll}>See all ➜</Text>
+        <TouchableOpacity style={styles.seeAllContainer}>
+          <Text style={styles.seeAll}>See all</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={metrics.moderateScale(18)}
+            color="#fff"
+          />
         </TouchableOpacity>
       </View>
 
@@ -135,7 +144,7 @@ const styles = StyleSheet.create({
     marginLeft: metrics.moderateScale(10),
   },
   bellButton: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#262626',
     padding: metrics.moderateScale(8),
     borderRadius: metrics.moderateScale(10),
   },
@@ -149,9 +158,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  cardIcon: {
+  cardIconContainer: {
+    backgroundColor: '#262626',
+    borderRadius: metrics.moderateScale(12),
+    padding: metrics.moderateScale(6),
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: metrics.moderateScale(10),
   },
+  cardIcon: {},
   cardTitle: {
     fontSize: metrics.moderateScale(15),
     fontWeight: 'bold',
@@ -163,7 +178,7 @@ const styles = StyleSheet.create({
   },
   createButton: {
     marginTop: metrics.moderateScale(15),
-    backgroundColor: '#111',
+    backgroundColor: '#262626',
     paddingVertical: metrics.moderateScale(12),
     borderRadius: metrics.moderateScale(10),
     alignItems: 'center',
@@ -184,13 +199,19 @@ const styles = StyleSheet.create({
     fontSize: metrics.moderateScale(15),
     fontWeight: '600',
   },
+  seeAllContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: metrics.moderateScale(5),
+  },
+
   seeAll: {
-    color: '#9b8ef9',
+    color: '#fff',
     fontSize: metrics.moderateScale(13),
   },
 
   recordCard: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#262626',
     borderRadius: metrics.moderateScale(12),
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,6 +243,14 @@ const styles = StyleSheet.create({
   recordDate: {
     color: '#aaa',
     fontSize: metrics.moderateScale(11),
+  },
+  viewMoreIcon: {
+    backgroundColor: '#9b8ef9',
+    height: metrics.moderateScale(20),
+    width: metrics.moderateScale(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: metrics.moderateScale(30),
   },
   viewMore: {
     flexDirection: 'row',
