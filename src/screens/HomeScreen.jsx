@@ -1,118 +1,9 @@
-// import {
-//   Image,
-//   StatusBar,
-//   StyleSheet,
-//   Text,
-//   TouchableOpacity,
-//   View,
-// } from 'react-native';
-// import React, { useEffect, useState } from 'react';
-// import { useNavigation, useRoute } from '@react-navigation/native';
-// import metrics from '../theme/metrics';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// import Header from '../components/Header';
-// import { SafeAreaView } from 'react-native-safe-area-context';
-
-// const HomeScreen = () => {
-
-//   const route = useRoute();
-//   const navigation = useNavigation();
-//   const [userName, setUserName] = useState('');
-
-//   useEffect(() => {
-//     if (route.params?.userName) {
-//       setUserName(route.params.userName);
-//     } else {
-//       const loadUser = async () => {
-//         const storedUser = await AsyncStorage.getItem('user');
-//         if (storedUser) {
-//           setUserName(storedUser);
-//         }
-//       };
-//       loadUser();
-//     }
-//   }, [route.params]);
-
-//   const handleLogout = async () => {
-//     await AsyncStorage.removeItem('user');
-//     navigation.replace('Login');
-//   };
-
-//   const handleInspectionForm = () => {
-//     navigation.navigate('InspectionList');
-//   };
-//   const handleInspectionStart = () => {
-//     navigation.navigate('Welcome');
-//   };
-
-//   return (
-//     <SafeAreaView style={styles.container}>
-//       {/* Header */}
-
-//       <Header userName={userName} handleLogout={handleLogout} />
-
-//       {/* Body */}
-//       <TouchableOpacity
-//         onPress={handleInspectionForm}
-//         style={styles.InspectionBtn}
-//       >
-//         <Text style={styles.InspectionTxt}>Inspection Forms</Text>
-//       </TouchableOpacity>
-
-//       <TouchableOpacity
-//         onPress={handleInspectionStart}
-//         style={styles.InspectionStartBtn}
-//       >
-//         <Text style={styles.InspectionTxt}> Start Inspection</Text>
-//       </TouchableOpacity>
-//     </SafeAreaView>
-//   );
-// };
-
-// export default HomeScreen;
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#0a0a0f',
-//   },
-
-//   InspectionBtn: {
-//     position: 'absolute',
-//     width: '90%',
-//     bottom: metrics.moderateScale(80),
-//     backgroundColor: 'black',
-//     padding: metrics.moderateScale(10),
-//     borderRadius: metrics.moderateScale(10),
-//     marginHorizontal: metrics.moderateScale(20),
-//     marginTop: metrics.moderateScale(20),
-//   },
-//   InspectionTxt: {
-//     fontSize: metrics.moderateScale(16),
-//     fontWeight: '500',
-//     textAlign: 'center',
-//     color: 'white',
-//   },
-//   InspectionStartBtn: {
-//     position: 'absolute',
-//     width: '90%',
-//     bottom: metrics.moderateScale(20),
-//     backgroundColor: 'black',
-//     padding: metrics.moderateScale(10),
-//     borderRadius: metrics.moderateScale(10),
-//     marginHorizontal: metrics.moderateScale(20),
-//     marginTop: metrics.moderateScale(20),
-//   },
-// });
-
 import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   FlatList,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -120,15 +11,27 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useRoute } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import metrics from '../theme/metrics';
+
 const records = [
   { id: '1', name: 'Sipho Dlamini', date: '02/04/2025' },
   { id: '2', name: 'Kagiso Mokoena', date: '02/04/2025' },
   { id: '3', name: 'Elsabe Coetzee', date: '02/04/2025' },
   { id: '4', name: 'Sarah Jane Smith', date: '02/04/2025' },
   { id: '5', name: 'Rebecca Louise Adams', date: '02/04/2025' },
+  { id: '6', name: 'Kagiso Mokoena', date: '02/04/2025' },
+  { id: '7', name: 'Elsabe Coetzee', date: '02/04/2025' },
+  { id: '8', name: 'Sarah Jane Smith', date: '02/04/2025' },
+  { id: '9', name: 'Rebecca Louise Adams', date: '02/04/2025' },
 ];
 
 const HomeScreen = () => {
+  const route = useRoute();
+  const { userName } = route.params || {};
+  const reduxName = useSelector(state => state.user.name);
+
   const renderItem = ({ item }) => (
     <View style={styles.recordCard}>
       <View style={styles.avatar}>
@@ -140,7 +43,11 @@ const HomeScreen = () => {
       </View>
       <TouchableOpacity style={styles.viewMore}>
         <Text style={styles.viewText}>View More</Text>
-        <Feather name="more-horizontal" size={20} color="#9b8ef9" />
+        <Feather
+          name="more-horizontal"
+          size={metrics.moderateScale(18)}
+          color="#9b8ef9"
+        />
       </TouchableOpacity>
     </View>
   );
@@ -150,9 +57,13 @@ const HomeScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.emoji}>👨‍🦳</Text>
-        <Text style={styles.welcome}>Welcome Back!</Text>
+        <Text style={styles.welcome}>Welcome {userName || reduxName} </Text>
         <TouchableOpacity style={styles.bellButton}>
-          <Ionicons name="notifications-outline" size={20} color="#fff" />
+          <Ionicons
+            name="notifications-outline"
+            size={metrics.moderateScale(20)}
+            color="#fff"
+          />
         </TouchableOpacity>
       </View>
 
@@ -164,7 +75,12 @@ const HomeScreen = () => {
         style={styles.gradientCard}
       >
         <View style={styles.gradientContent}>
-          <Feather name="list" size={26} color="#000" style={styles.cardIcon} />
+          <Feather
+            name="list"
+            size={metrics.moderateScale(26)}
+            color="#000"
+            style={styles.cardIcon}
+          />
           <View>
             <Text style={styles.cardTitle}>Add New Record</Text>
             <Text style={styles.cardSubtitle}>
@@ -185,12 +101,12 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Records List */}
       <FlatList
         data={records}
+        showsVerticalScrollIndicator={false}
         keyExtractor={item => item.id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 30 }}
+        contentContainerStyle={{ paddingBottom: metrics.moderateScale(55) }}
       />
     </SafeAreaView>
   );
@@ -202,7 +118,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0f0f1a',
-    padding: 20,
+    padding: metrics.moderateScale(20),
   },
   header: {
     flexDirection: 'row',
@@ -210,100 +126,102 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   emoji: {
-    fontSize: 30,
+    fontSize: metrics.moderateScale(28),
   },
   welcome: {
     flex: 1,
     color: '#fff',
-    fontSize: 18,
-    marginLeft: 10,
+    fontSize: metrics.moderateScale(16),
+    marginLeft: metrics.moderateScale(10),
   },
   bellButton: {
     backgroundColor: '#1e1e1e',
-    padding: 8,
-    borderRadius: 10,
+    padding: metrics.moderateScale(8),
+    borderRadius: metrics.moderateScale(10),
   },
 
   gradientCard: {
-    marginVertical: 20,
-    borderRadius: 15,
-    padding: 15,
+    marginVertical: metrics.moderateScale(20),
+    borderRadius: metrics.moderateScale(15),
+    padding: metrics.moderateScale(15),
   },
   gradientContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   cardIcon: {
-    marginRight: 10,
+    marginRight: metrics.moderateScale(10),
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: metrics.moderateScale(15),
     fontWeight: 'bold',
     color: '#000',
   },
   cardSubtitle: {
-    fontSize: 13,
+    fontSize: metrics.moderateScale(12),
     color: '#333',
   },
   createButton: {
-    marginTop: 15,
+    marginTop: metrics.moderateScale(15),
     backgroundColor: '#111',
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: metrics.moderateScale(12),
+    borderRadius: metrics.moderateScale(10),
     alignItems: 'center',
   },
   createButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: metrics.moderateScale(14),
   },
 
   recordsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: metrics.moderateScale(10),
   },
   recordsTitle: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: metrics.moderateScale(15),
     fontWeight: '600',
   },
   seeAll: {
     color: '#9b8ef9',
-    fontSize: 14,
+    fontSize: metrics.moderateScale(13),
   },
 
   recordCard: {
     backgroundColor: '#1e1e1e',
-    borderRadius: 12,
+    borderRadius: metrics.moderateScale(12),
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    marginBottom: 12,
+    padding: metrics.moderateScale(14),
+    marginBottom: metrics.moderateScale(12),
   },
   avatar: {
     backgroundColor: '#6a5acd',
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: metrics.moderateScale(40),
+    height: metrics.moderateScale(40),
+    borderRadius: metrics.moderateScale(10),
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: metrics.moderateScale(14),
   },
   recordInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: metrics.moderateScale(12),
   },
   recordName: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: metrics.moderateScale(14),
     fontWeight: '500',
   },
   recordDate: {
     color: '#aaa',
-    fontSize: 12,
+    fontSize: metrics.moderateScale(11),
   },
   viewMore: {
     flexDirection: 'row',
@@ -311,6 +229,7 @@ const styles = StyleSheet.create({
   },
   viewText: {
     color: '#9b8ef9',
-    marginRight: 5,
+    marginRight: metrics.moderateScale(5),
+    fontSize: metrics.moderateScale(12),
   },
 });

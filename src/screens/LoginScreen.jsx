@@ -14,6 +14,9 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import InputText from '../components/InputText';
+import { login } from '../redux/userSlice';
+
+import { useDispatch } from 'react-redux';
 
 import * as Yup from 'yup';
 import { Formik } from 'formik';
@@ -31,9 +34,14 @@ const loginSchema = Yup.object().shape({
 const LoginScreen = () => {
   const navigation = useNavigation();
 
-  const handleLogIn = async values => {
-    await AsyncStorage.setItem('user', values.userName);
-    navigation.replace('Home', { userName: values.userName });
+  const dispatch = useDispatch();
+
+  const handleLogIn = values => {
+    dispatch(login(values.userName));
+    navigation.replace('BottomTab', {
+      screen: 'Home',
+      params: { userName: values.userName },
+    });
   };
 
   const handleSignUp = () => {

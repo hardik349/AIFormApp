@@ -41,6 +41,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   HelloText: {
+    color: '#fff',
     fontSize: metrics.moderateScale(16),
     fontWeight: '500',
   },
