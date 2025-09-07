@@ -21,6 +21,7 @@ import { useDispatch } from 'react-redux';
 import * as Yup from 'yup';
 import { Formik } from 'formik';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HandleBack from '../components/HandleBack';
 
 const loginSchema = Yup.object().shape({
   userName: Yup.string()
@@ -61,15 +62,7 @@ const LoginScreen = () => {
           colors={['#0a0a0f', '#0f0f1a']}
           style={styles.container}
         >
-          <TouchableOpacity onPress={handleBack} style={styles.backContainer}>
-            <Ionicons
-              name="chevron-back"
-              size={metrics.moderateScale(24)}
-              color="white"
-              style={styles.backIcon}
-              onPress={handleBack}
-            />
-          </TouchableOpacity>
+          <HandleBack handleBack={handleBack} />
 
           <Text style={styles.WelcomeText}>Welcome Back! 👋</Text>
           <Text style={styles.WelcomeSubText}>

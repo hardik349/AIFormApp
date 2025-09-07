@@ -5,13 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import metrics from '../theme/metrics';
 
@@ -28,6 +29,7 @@ const records = [
 ];
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
   const route = useRoute();
   const { userName } = route.params || {};
   const reduxName = useSelector(state => state.user.name);
@@ -58,7 +60,11 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.emoji}>👨‍🦳</Text>
+        {/* <Text style={styles.emoji}>👨‍🦳</Text> */}
+        <Image
+          source={require('../assets/images/Profile.png')}
+          style={styles.emoji}
+        />
         <Text style={styles.welcome}>Welcome {userName || reduxName} </Text>
         <TouchableOpacity style={styles.bellButton}>
           <Ionicons
@@ -92,7 +98,10 @@ const HomeScreen = () => {
             </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.createButton}>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => navigation.navigate('AddDetails')}
+        >
           <Text style={styles.createButtonText}>Create New</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -135,7 +144,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   emoji: {
-    fontSize: metrics.moderateScale(28),
+    width: metrics.moderateScale(40),
+    height: metrics.moderateScale(40),
   },
   welcome: {
     flex: 1,

@@ -10,6 +10,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import InspectionListScreen from '../screens/InpectionsListScreen';
 import SplashScreen from '../screens/SplashScreen';
 import GetStartedScreen from '../screens/GetStartedScreen';
+import AddDetailsScreen from '../screens/AddDetailsScreen';
 import BottomTabs from './BottomTabs';
 
 const Stack = createStackNavigator();
@@ -28,6 +29,7 @@ const AppNavigation = () => {
         <Stack.Screen name="BottomTab" component={BottomTabs} />
         <Stack.Screen name="InspectionList" component={InspectionListScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="AddDetails" component={AddDetailsScreen} />
         <Stack.Screen name="Form" component={FormScreen} />
       </Stack.Navigator>
     </NavigationContainer>
