@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   StyleSheet,
   ScrollView,
   Modal,
+  Alert,
+  Image,
+  Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -15,147 +18,349 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import HandleBack from '../components/HandleBack';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import NetInfo from '@react-native-community/netinfo';
+import Toast from 'react-native-toast-message';
+import { launchCamera } from 'react-native-image-picker';
+import { useVoiceExtractor } from '../Hook/useVoiceExtractor';
+import { useNavigation } from '@react-navigation/native';
+
+const RenderInput = React.memo(
+  ({
+    fieldKey,
+    icon,
+    placeholder,
+    currentField,
+    filled,
+    info,
+    setInfo,
+    setFilled,
+    setCurrentFieldIndex,
+    fieldOrder,
+  }) => {
+    const isActive = currentField === fieldKey;
+    const status = filled[fieldKey];
+    const value = info[fieldKey] ?? '';
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      Animated.spring(scaleAnim, {
+        toValue: isActive ? 1.02 : 1,
+        friction: 5,
+        useNativeDriver: true,
+      }).start();
+    }, [isActive]);
+
+    return (
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <View style={styles.inputInner}>
+          <Ionicons name={icon} size={24} color="#bbb" style={styles.icon} />
+          <TextInput
+            placeholder={placeholder}
+            placeholderTextColor="#bbb"
+            style={styles.input}
+            value={value}
+            onChangeText={t => {
+              setInfo(prev => ({ ...prev, [fieldKey]: t }));
+              setFilled(prev => ({
+                ...prev,
+                [fieldKey]: t.trim() ? 'filled' : 'empty',
+              }));
+            }}
+            onFocus={() => {
+              const index = fieldOrder.indexOf(fieldKey);
+              if (index !== -1) setCurrentFieldIndex(index);
+            }}
+            blurOnSubmit={false}
+          />
+          {status === 'filled' && (
+            <Ionicons name="checkmark-circle" size={20} color="#00ff99" />
+          )}
+          {status === 'empty' && (
+            <Ionicons name="close-circle" size={20} color="red" />
+          )}
+        </View>
+      </Animated.View>
+    );
+  },
+);
 
 const AddDetailsScreen = () => {
-  const [builderName, setBuilderName] = useState('');
-  const [address, setAddress] = useState('');
-  const [buildingName, setBuildingName] = useState('');
+  // ------------------- FORM STATE -------------------
+  const [info, setInfo] = useState({
+    builderName: '',
+    address: '',
+    buildingName: '',
+    date: new Date().toLocaleDateString('en-GB'),
+  });
 
-  const [alertVisible, setAlertVisible] = useState(false);
+  const [filled, setFilled] = useState({
+    builderName: 'initial',
+    address: 'initial',
+    buildingName: 'initial',
+    date: 'initial',
+  });
 
-  const [activeField, setActiveField] = useState('builder');
-
-  const today = new Date();
-  const [date, setDate] = useState(today.toLocaleDateString('en-GB'));
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const addressRef = React.useRef(null);
-  const buildingRef = React.useRef(null);
-  const dateRef = React.useRef(null);
+  const fieldOrder = ['builderName', 'address', 'buildingName', 'date'];
+  const [currentFieldIndex, setCurrentFieldIndex] = useState(0);
+  const currentField = fieldOrder[currentFieldIndex];
+  const navigation = useNavigation();
 
   const allFieldsFilled =
-    builderName.trim() !== '' &&
-    address.trim() !== '' &&
-    buildingName.trim() !== '' &&
-    date.trim() !== '';
+    info.builderName.trim() !== '' &&
+    info.address.trim() !== '' &&
+    info.buildingName.trim() !== '' &&
+    info.date.trim() !== '';
 
-  const handleSubmit = () => {
-    setAlertVisible(true);
+  const [micStatus, setMicStatus] = useState('idle'); // idle | listening | stopped
+  const micStatusRef = useRef(micStatus);
+  const listenTimeoutRef = useRef(null);
+
+  const { isListening, extractedData, startListening, stopListening } =
+    useVoiceExtractor(
+      `Extract only ${currentField} from voice in JSON EXACTLY like: { "${currentField}": "..." }`,
+    );
+
+  useEffect(() => {
+    micStatusRef.current = micStatus;
+  }, [micStatus]);
+
+  useEffect(() => {
+    if (extractedData && extractedData[currentField]) {
+      const value = String(extractedData[currentField]).trim();
+      if (value) {
+        setInfo(prev => ({ ...prev, [currentField]: value }));
+        setFilled(prev => ({ ...prev, [currentField]: 'filled' }));
+
+        // Move to next field if available
+        if (currentFieldIndex < fieldOrder.length - 1) {
+          setCurrentFieldIndex(prev => prev + 1);
+        }
+      }
+      stopListening?.();
+      setMicStatus('stopped');
+    }
+  }, [extractedData]);
+
+  useEffect(() => {
+    if (listenTimeoutRef.current) {
+      clearTimeout(listenTimeoutRef.current);
+      listenTimeoutRef.current = null;
+    }
+    if (micStatus === 'listening') {
+      listenTimeoutRef.current = setTimeout(() => {
+        if (micStatusRef.current === 'listening') {
+          stopListening?.();
+          setMicStatus('idle');
+          Toast.show({
+            type: 'error',
+            text1: 'Not recognized… try again',
+            position: 'top',
+            visibilityTime: 2500,
+          });
+        }
+      }, 5000);
+    }
+    return () => {
+      if (listenTimeoutRef.current) {
+        clearTimeout(listenTimeoutRef.current);
+        listenTimeoutRef.current = null;
+      }
+    };
+  }, [micStatus, stopListening]);
+
+  const handleBack = () => {
+    navigation.goBack();
   };
+
+  const handleMicButtonPress = async () => {
+    const state = await NetInfo.fetch();
+    if (!state.isConnected) {
+      Toast.show({
+        type: 'error',
+        text1: 'No internet connection',
+        position: 'top',
+        visibilityTime: 2500,
+      });
+      return;
+    }
+    if (isListening) {
+      stopListening();
+      setMicStatus('stopped');
+    } else {
+      startListening();
+      setMicStatus('listening');
+    }
+  };
+
+  // ------------------- DATE PICKER -------------------
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const today = new Date();
 
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      setDate(selectedDate.toLocaleDateString('en-GB'));
+      const formatted = selectedDate.toLocaleDateString('en-GB');
+      setInfo(prev => ({ ...prev, date: formatted }));
+      setFilled(prev => ({ ...prev, date: 'filled' }));
+      // if date was active, advance
+      if (currentField === 'date') {
+        setCurrentFieldIndex(fieldOrder.length - 1); // last step stays
+      }
     }
   };
 
+  const [media, setMedia] = useState([]); // array of {uri, type}
+
+  const openCamera = () => {
+    Alert.alert('Choose Media Type', 'Capture Photo or Record Video?', [
+      {
+        text: 'Photo',
+        onPress: () => {
+          launchCamera({ mediaType: 'photo', quality: 1 }, resp => {
+            if (!resp?.didCancel && !resp?.errorCode && resp?.assets?.length) {
+              const asset = resp.assets[0];
+              setMedia(prev => [...prev, { uri: asset.uri, type: 'photo' }]);
+              Toast.show({
+                type: 'success',
+                text1: 'Photo added',
+                position: 'bottom',
+                visibilityTime: 1500,
+              });
+            }
+          });
+        },
+      },
+      {
+        text: 'Video',
+        onPress: () => {
+          launchCamera({ mediaType: 'video', videoQuality: 'high' }, resp => {
+            if (!resp?.didCancel && !resp?.errorCode && resp?.assets?.length) {
+              const asset = resp.assets[0];
+              setMedia(prev => [...prev, { uri: asset.uri, type: 'video' }]);
+              Toast.show({
+                type: 'success',
+                text1: 'Video added',
+                position: 'bottom',
+                visibilityTime: 1500,
+              });
+            }
+          });
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const [alertVisible, setAlertVisible] = useState(false);
+  const handleSubmit = () => setAlertVisible(true);
+
+  // ------------------- PROGRESS -------------------
+  const stepsDone = Object.values(filled).filter(s => s === 'filled').length;
+  const progressPercent = (stepsDone / fieldOrder.length) * 100;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <HandleBack handleBack={() => {}} />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+      >
+        <HandleBack handleBack={handleBack} />
+
         {/* Header */}
         <Text style={styles.title}>Add New Details</Text>
         <Text style={styles.subtitle}>Sub-title goes here</Text>
 
-        {/* Progress indicator */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressDotActive} />
-          <View style={styles.progressDot} />
+        {/* Progress bar */}
+        <View style={styles.progressTrack}>
+          <View
+            style={[styles.progressFill, { width: `${progressPercent}%` }]}
+          />
         </View>
 
-        {/* Input Fields */}
-        <View style={styles.inputContainer}>
-          <Ionicons
-            name="person-outline"
-            size={24}
-            color="#bbb"
-            style={styles.icon}
-          />
-          <TextInput
+        {/* Inputs */}
+        <View style={{ gap: verticalScale(12), marginTop: verticalScale(8) }}>
+          <RenderInput
+            fieldKey="builderName"
+            icon="person-outline"
             placeholder="Builder Name"
-            placeholderTextColor="#bbb"
-            style={styles.input}
-            value={builderName}
-            onChangeText={setBuilderName}
+            currentField={currentField}
+            filled={filled}
+            info={info}
+            setInfo={setInfo}
+            setFilled={setFilled}
+            setCurrentFieldIndex={setCurrentFieldIndex}
+            fieldOrder={fieldOrder}
           />
-        </View>
 
-        <View style={styles.inputContainer}>
-          <Ionicons
-            name="location-outline"
-            size={24}
-            color="#bbb"
-            style={styles.icon}
-          />
-          <TextInput
+          <RenderInput
+            fieldKey="address"
+            icon="location-outline"
             placeholder="Address"
-            placeholderTextColor="#bbb"
-            style={styles.input}
-            value={address}
-            onChangeText={setAddress}
+            currentField={currentField}
+            filled={filled}
+            info={info}
+            setInfo={setInfo}
+            setFilled={setFilled}
+            setCurrentFieldIndex={setCurrentFieldIndex}
+            fieldOrder={fieldOrder}
           />
-        </View>
 
-        <View style={styles.inputContainer}>
-          <Ionicons
-            name="business-outline"
-            size={24}
-            color="#bbb"
-            style={styles.icon}
-          />
-          <TextInput
+          <RenderInput
+            fieldKey="buildingName"
+            icon="business-outline"
             placeholder="Building Name"
-            placeholderTextColor="#bbb"
-            style={styles.input}
-            value={buildingName}
-            onChangeText={setBuildingName}
+            currentField={currentField}
+            filled={filled}
+            info={info}
+            setInfo={setInfo}
+            setFilled={setFilled}
+            setCurrentFieldIndex={setCurrentFieldIndex}
+            fieldOrder={fieldOrder}
           />
+
+          {/* Date as button input */}
+          <TouchableOpacity
+            style={[
+              styles.inputContainer,
+              currentField === 'date' && { borderColor: '#A099FF' },
+            ]}
+            onPress={() => {
+              setCurrentFieldIndex(fieldOrder.indexOf('date'));
+              setShowDatePicker(true);
+            }}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={24}
+              color="#bbb"
+              style={styles.icon}
+            />
+            <Text style={{ color: '#fff', fontSize: moderateScale(15) }}>
+              {info.date}
+            </Text>
+            {filled.date === 'filled' && (
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color="#00ff99"
+                style={{ marginLeft: 'auto' }}
+              />
+            )}
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={today}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          )}
         </View>
-        {/* 
-        <View style={styles.inputContainer}>
-          <Ionicons
-            name="calendar-outline"
-            size={24}
-            color="#bbb"
-            style={styles.icon}
-          />
-          <TextInput
-            placeholder="Date (dd/mm/yyyy)"
-            placeholderTextColor="#bbb"
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-          />
-        </View> */}
 
-        {/* Date Input */}
-        <TouchableOpacity
-          style={styles.inputContainer}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={24}
-            color="#bbb"
-            style={styles.icon}
-          />
-          <Text style={{ color: '#fff', fontSize: moderateScale(15) }}>
-            {date}
-          </Text>
-        </TouchableOpacity>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={today}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
-
-        {/* Upload Button */}
-        <TouchableOpacity style={styles.uploadBtn}>
+        {/* Upload Images / Videos */}
+        <TouchableOpacity style={styles.uploadBtn} onPress={openCamera}>
           <Text style={styles.uploadText}>Upload Images</Text>
           <Ionicons
             name="camera-outline"
@@ -164,7 +369,27 @@ const AddDetailsScreen = () => {
           />
         </TouchableOpacity>
 
-        {/* Submit Form */}
+        {/* Thumbnails */}
+        {media.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: verticalScale(16) }}
+          >
+            {media.map((m, idx) => (
+              <View key={`${m.uri}-${idx}`} style={styles.thumbWrap}>
+                <Image source={{ uri: m.uri }} style={styles.thumb} />
+                {m.type === 'video' && (
+                  <View style={styles.videoBadge}>
+                    <Ionicons name="videocam" size={14} color="#000" />
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Submit */}
         <TouchableOpacity
           style={[
             styles.submitBtn,
@@ -181,8 +406,9 @@ const AddDetailsScreen = () => {
           />
         </TouchableOpacity>
 
+        {/* Voice Mic */}
         <View style={styles.voiceContainer}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleMicButtonPress} activeOpacity={0.8}>
             <LinearGradient
               colors={['#9CFFAC', '#88C2FF', '#C2A5FF', '#FFADDB']}
               start={{ x: 0, y: 0 }}
@@ -192,12 +418,16 @@ const AddDetailsScreen = () => {
               <Ionicons
                 name="mic-outline"
                 size={moderateScale(28)}
-                color="#000"
+                color={micStatus === 'listening' ? '#ff3333' : '#000'}
               />
             </LinearGradient>
           </TouchableOpacity>
 
-          <Text style={styles.voiceText}>Tap to Speak</Text>
+          <Text style={styles.voiceText}>
+            {micStatus === 'listening'
+              ? `Listening for ${currentField}…`
+              : `Tap to speak ${currentField}`}
+          </Text>
         </View>
       </ScrollView>
 
@@ -206,10 +436,9 @@ const AddDetailsScreen = () => {
         visible={alertVisible}
         transparent
         animationType="fade"
-        statusBarTranslucent={true}
+        statusBarTranslucent
         onRequestClose={() => setAlertVisible(false)}
       >
-        {/* Blur Background */}
         <BlurView
           style={styles.blurBackground}
           blurType="dark"
@@ -217,7 +446,6 @@ const AddDetailsScreen = () => {
           reducedTransparencyFallbackColor="black"
         />
 
-        {/* Centered Alert */}
         <View style={styles.centeredView}>
           <View style={styles.alertBox}>
             <Ionicons name="checkmark-circle" size={60} color="limegreen" />
@@ -235,6 +463,8 @@ const AddDetailsScreen = () => {
     </SafeAreaView>
   );
 };
+
+export default AddDetailsScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -257,24 +487,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: verticalScale(10),
   },
-  progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  progressTrack: {
+    height: verticalScale(4),
+    backgroundColor: '#2b2b2b',
+    borderRadius: scale(3),
+    overflow: 'hidden',
     marginBottom: verticalScale(20),
   },
-  progressDot: {
-    width: scale(40),
-    height: verticalScale(3),
-    backgroundColor: '#454266',
-    borderRadius: scale(5),
-    marginHorizontal: scale(4),
-  },
-  progressDotActive: {
-    width: scale(40),
-    height: verticalScale(3),
+  progressFill: {
+    height: '100%',
     backgroundColor: '#A099FF',
-    borderRadius: scale(5),
-    marginHorizontal: scale(4),
   },
   inputContainer: {
     flexDirection: 'row',
@@ -282,12 +504,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e1e1e',
     borderRadius: scale(12),
     paddingHorizontal: scale(12),
-    marginBottom: verticalScale(15),
+    height: verticalScale(48),
+    borderWidth: 1,
+    borderColor: '#1e1e1e',
+  },
+  inputContainerDim: {
+    backgroundColor: '#1e1e1e',
+    borderRadius: scale(12),
+    borderWidth: 1,
+    borderColor: '#1e1e1e',
+    marginBottom: verticalScale(12),
+  },
+  activeWrapper: {
+    borderRadius: scale(12),
+    padding: scale(2),
+    marginBottom: verticalScale(12),
+  },
+  inputInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1e1e1e',
+    borderRadius: scale(10),
+    paddingHorizontal: scale(12),
     height: verticalScale(48),
   },
-  icon: {
-    marginRight: scale(8),
-  },
+  icon: { marginRight: scale(8) },
   input: {
     flex: 1,
     color: '#fff',
@@ -301,7 +542,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: scale(10),
     padding: scale(12),
-    marginBottom: verticalScale(15),
+    marginTop: verticalScale(8),
+    marginBottom: verticalScale(12),
     gap: scale(10),
     justifyContent: 'center',
   },
@@ -309,6 +551,48 @@ const styles = StyleSheet.create({
     color: '#A099FF',
     fontSize: moderateScale(14),
     fontFamily: 'Inter_18pt-Medium',
+  },
+  thumbWrap: {
+    width: scale(70),
+    height: scale(70),
+    borderRadius: scale(10),
+    overflow: 'hidden',
+    marginRight: scale(8),
+    position: 'relative',
+    backgroundColor: '#222',
+  },
+  thumb: { width: '100%', height: '100%' },
+  videoBadge: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: '#A099FF',
+    borderRadius: 6,
+  },
+  voiceContainer: {
+    borderWidth: 1,
+    borderColor: '#A099FF',
+    borderRadius: scale(12),
+    paddingVertical: verticalScale(14),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1e1e1e',
+    marginBottom: verticalScale(14),
+  },
+  micCircle: {
+    width: scale(60),
+    height: scale(60),
+    borderRadius: scale(30),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceText: {
+    color: '#fff',
+    marginTop: verticalScale(8),
+    fontSize: moderateScale(13),
+    fontWeight: '500',
   },
   submitBtn: {
     flexDirection: 'row',
@@ -325,38 +609,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_18pt-Medium',
     marginRight: scale(6),
   },
-  voiceContainer: {
-    borderWidth: 1,
-    borderColor: '#A099FF',
-    borderRadius: scale(12),
-    paddingVertical: verticalScale(14),
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1e1e1e',
-  },
-  micCircle: {
-    width: scale(60),
-    height: scale(60),
-    borderRadius: scale(30),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  voiceText: {
-    color: '#fff',
-    marginTop: verticalScale(8),
-    fontSize: moderateScale(13),
-    fontWeight: '500',
-  },
-
-  // Alert Modal
-  blurBackground: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  // Modal
+  blurBackground: { ...StyleSheet.absoluteFillObject },
+  centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   alertBox: {
     width: scale(300),
     backgroundColor: '#1e1e1e',
@@ -384,5 +639,3 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(10),
   },
 });
-
-export default AddDetailsScreen;

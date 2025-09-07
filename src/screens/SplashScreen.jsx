@@ -1,28 +1,39 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Image, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import metrics from '../theme/metrics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import metrics from '../theme/metrics';
 
 const SplashScreen = () => {
   const navigation = useNavigation();
+  const fadeAnim = useRef(new Animated.Value(0)).current; // initial opacity 0
+
   useEffect(() => {
-    setTimeout(() => {
-      navigation.replace('Login');
-    }, 2000);
+    // Fade in
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1200,
+      useNativeDriver: true,
+    }).start(() => {
+      // After fade in complete, wait 1s then navigate
+      setTimeout(() => {
+        navigation.replace('Login');
+      }, 800);
+    });
   }, []);
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>
-        Proof of <Text style={styles.highlight}>Concept</Text>
-      </Text>
-      <Text style={styles.subtitle}>Designed By</Text>
-      <Image
-        source={require('../assets/images/techies.png')}
-        style={styles.image}
-      />
+      <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+        <Text style={styles.title}>
+          Proof of <Text style={styles.highlight}>Concept</Text>
+        </Text>
+        <Text style={styles.subtitle}>Designed By</Text>
+        <Image
+          source={require('../assets/images/techies.png')}
+          style={styles.image}
+        />
+      </Animated.View>
     </SafeAreaView>
   );
 };
