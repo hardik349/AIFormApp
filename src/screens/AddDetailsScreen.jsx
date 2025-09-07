@@ -52,7 +52,12 @@ const RenderInput = React.memo(
 
     return (
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <View style={styles.inputInner}>
+        <View
+          style={[
+            styles.inputInner,
+            isActive && { borderColor: '#A099FF', borderWidth: 1.2 },
+          ]}
+        >
           <Ionicons name={icon} size={24} color="#bbb" style={styles.icon} />
           <TextInput
             placeholder={placeholder}
@@ -371,22 +376,20 @@ const AddDetailsScreen = () => {
 
         {/* Thumbnails */}
         {media.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: verticalScale(16) }}
-          >
-            {media.map((m, idx) => (
-              <View key={`${m.uri}-${idx}`} style={styles.thumbWrap}>
-                <Image source={{ uri: m.uri }} style={styles.thumb} />
-                {m.type === 'video' && (
-                  <View style={styles.videoBadge}>
-                    <Ionicons name="videocam" size={14} color="#000" />
-                  </View>
-                )}
-              </View>
-            ))}
-          </ScrollView>
+          <View style={styles.thumbContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {media.map((m, idx) => (
+                <View key={`${m.uri}-${idx}`} style={[styles.thumbWrap]}>
+                  <Image source={{ uri: m.uri }} style={styles.thumb} />
+                  {m.type === 'video' && (
+                    <View style={styles.videoBadge}>
+                      <Ionicons name="videocam" size={14} color="#000" />
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
         )}
 
         {/* Submit */}
@@ -551,6 +554,15 @@ const styles = StyleSheet.create({
     color: '#A099FF',
     fontSize: moderateScale(14),
     fontFamily: 'Inter_18pt-Medium',
+  },
+  thumbContainer: {
+    borderColor: '#8a84f9',
+    borderWidth: 1.5,
+    borderRadius: scale(12),
+    overflow: 'hidden',
+    justifyContent: 'flex-start',
+    padding: scale(8),
+    marginBottom: verticalScale(12),
   },
   thumbWrap: {
     width: scale(70),
