@@ -14,16 +14,40 @@ import { BlurView } from '@react-native-community/blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HandleBack from '../components/HandleBack';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddDetailsScreen = () => {
   const [builderName, setBuilderName] = useState('');
   const [address, setAddress] = useState('');
   const [buildingName, setBuildingName] = useState('');
-  const [date, setDate] = useState('');
+
   const [alertVisible, setAlertVisible] = useState(false);
+
+  const [activeField, setActiveField] = useState('builder');
+
+  const today = new Date();
+  const [date, setDate] = useState(today.toLocaleDateString('en-GB'));
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const addressRef = React.useRef(null);
+  const buildingRef = React.useRef(null);
+  const dateRef = React.useRef(null);
+
+  const allFieldsFilled =
+    builderName.trim() !== '' &&
+    address.trim() !== '' &&
+    buildingName.trim() !== '' &&
+    date.trim() !== '';
 
   const handleSubmit = () => {
     setAlertVisible(true);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setDate(selectedDate.toLocaleDateString('en-GB'));
+    }
   };
 
   return (
@@ -36,8 +60,8 @@ const AddDetailsScreen = () => {
 
         {/* Progress indicator */}
         <View style={styles.progressContainer}>
-          <View style={styles.progressDot} />
           <View style={styles.progressDotActive} />
+          <View style={styles.progressDot} />
         </View>
 
         {/* Input Fields */}
@@ -88,7 +112,7 @@ const AddDetailsScreen = () => {
             onChangeText={setBuildingName}
           />
         </View>
-
+        {/* 
         <View style={styles.inputContainer}>
           <Ionicons
             name="calendar-outline"
@@ -103,7 +127,32 @@ const AddDetailsScreen = () => {
             value={date}
             onChangeText={setDate}
           />
-        </View>
+        </View> */}
+
+        {/* Date Input */}
+        <TouchableOpacity
+          style={styles.inputContainer}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={24}
+            color="#bbb"
+            style={styles.icon}
+          />
+          <Text style={{ color: '#fff', fontSize: moderateScale(15) }}>
+            {date}
+          </Text>
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={today}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
 
         {/* Upload Button */}
         <TouchableOpacity style={styles.uploadBtn}>
@@ -111,23 +160,25 @@ const AddDetailsScreen = () => {
           <Ionicons
             name="camera-outline"
             size={moderateScale(24)}
-            color="#a78bfa"
+            color="#A099FF"
           />
         </TouchableOpacity>
 
         {/* Submit Form */}
-        <TouchableOpacity onPress={handleSubmit}>
-          <LinearGradient
-            colors={['#8b5cf6', '#6366f1']}
-            style={styles.submitBtn}
-          >
-            <Text style={styles.submitText}>Submit Form</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={moderateScale(16)}
-              color="#fff"
-            />
-          </LinearGradient>
+        <TouchableOpacity
+          style={[
+            styles.submitBtn,
+            !allFieldsFilled && { backgroundColor: '#5C588B' },
+          ]}
+          disabled={!allFieldsFilled}
+          onPress={handleSubmit}
+        >
+          <Text style={styles.submitText}>Submit Form</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={moderateScale(16)}
+            color="#262626"
+          />
         </TouchableOpacity>
 
         <View style={styles.voiceContainer}>
@@ -162,7 +213,7 @@ const AddDetailsScreen = () => {
         <BlurView
           style={styles.blurBackground}
           blurType="dark"
-          blurAmount={2} // lower blur effect
+          blurAmount={1}
           reducedTransparencyFallbackColor="black"
         />
 
@@ -197,7 +248,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#fff',
     textAlign: 'center',
-    marginTop: verticalScale(40),
+    marginTop: verticalScale(20),
   },
   subtitle: {
     fontSize: moderateScale(15),
@@ -214,14 +265,14 @@ const styles = StyleSheet.create({
   progressDot: {
     width: scale(40),
     height: verticalScale(3),
-    backgroundColor: '#444',
+    backgroundColor: '#454266',
     borderRadius: scale(5),
     marginHorizontal: scale(4),
   },
   progressDotActive: {
     width: scale(40),
     height: verticalScale(3),
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#A099FF',
     borderRadius: scale(5),
     marginHorizontal: scale(4),
   },
@@ -246,7 +297,7 @@ const styles = StyleSheet.create({
   uploadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#8b5cf6',
+    borderColor: '#A099FF',
     borderWidth: 1,
     borderRadius: scale(10),
     padding: scale(12),
@@ -255,12 +306,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   uploadText: {
-    color: '#a78bfa',
+    color: '#A099FF',
     fontSize: moderateScale(14),
     fontFamily: 'Inter_18pt-Medium',
   },
   submitBtn: {
     flexDirection: 'row',
+    backgroundColor: '#A099FF',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: scale(10),
@@ -268,14 +320,14 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(20),
   },
   submitText: {
-    color: '#fff',
+    color: '#262626',
     fontSize: moderateScale(15),
     fontFamily: 'Inter_18pt-Medium',
     marginRight: scale(6),
   },
   voiceContainer: {
     borderWidth: 1,
-    borderColor: '#8b5cf6',
+    borderColor: '#A099FF',
     borderRadius: scale(12),
     paddingVertical: verticalScale(14),
     alignItems: 'center',
