@@ -90,7 +90,9 @@
 import { useEffect, useState } from 'react';
 import Voice from '@react-native-voice/voice';
 
-const OPENAI_API_KEY = '';
+const OPENAI_API_KEY =
+  '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';
+
 export const useVoiceExtractor = schemaPrompt => {
   const [isListening, setIsListening] = useState(false);
   const [extractedData, setExtractedData] = useState({});
