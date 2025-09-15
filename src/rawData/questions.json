@@ -1,0 +1,6 @@
+[
+  { "key": "name", "text": "Please tell me your name" },
+  { "key": "building", "text": "Please tell me your building name" },
+  { "key": "date", "text": "Please tell me the date" },
+  { "key": "address", "text": "Please tell me your house no" }
+]
