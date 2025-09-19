@@ -13,6 +13,7 @@ import GetStartedScreen from '../screens/GetStartedScreen';
 import AddDetailsScreen from '../screens/AddDetailsScreen';
 import BottomTabs from './BottomTabs';
 import RecordDetailsScreen from '../screens/RecordDetailScreen';
+import AddDetailScreen2 from '../screens/AddDetailScreen2';
 
 const Stack = createStackNavigator();
 
@@ -31,6 +32,8 @@ const AppNavigation = () => {
         <Stack.Screen name="InspectionList" component={InspectionListScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="AddDetails" component={AddDetailsScreen} />
+        <Stack.Screen name="AddDetails2" component={AddDetailScreen2} />
+
         <Stack.Screen name="RecordDetails" component={RecordDetailsScreen} />
       </Stack.Navigator>
     </NavigationContainer>

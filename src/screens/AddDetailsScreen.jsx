@@ -92,8 +92,6 @@ const RenderInput = React.memo(
 );
 
 const AddDetailsScreen = () => {
-  // ------------------- FORM STATE -------------------
-
   const dispatch = useDispatch();
   const [info, setInfo] = useState({
     builderName: '',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,30 +11,46 @@ import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { useNavigation, useRoute } from '@react-navigation/native';
+import Tts from 'react-native-tts';
+import {
+  useNavigation,
+  useRoute,
+  useIsFocused,
+} from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import metrics from '../theme/metrics';
-
-const records = [
-  { id: '1', name: 'Sipho Dlamini', date: '02/04/2025' },
-  { id: '2', name: 'Kagiso Mokoena', date: '02/04/2025' },
-  { id: '3', name: 'Elsabe Coetzee', date: '02/04/2025' },
-  { id: '4', name: 'Sarah Jane Smith', date: '02/04/2025' },
-  { id: '5', name: 'Rebecca Louise Adams', date: '02/04/2025' },
-  { id: '6', name: 'Kagiso Mokoena', date: '02/04/2025' },
-  { id: '7', name: 'Elsabe Coetzee', date: '02/04/2025' },
-  { id: '8', name: 'Sarah Jane Smith', date: '02/04/2025' },
-  { id: '9', name: 'Rebecca Louise Adams', date: '02/04/2025' },
-];
+import { fetchRecords } from '../database/dbService';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
   const route = useRoute();
   const { userName } = route.params || {};
   const reduxName = useSelector(state => state.user.name);
 
-  const records = useSelector(state => state.records);
+  const [records, setRecords] = useState([]); // Local state for DB records
+
+  const displayName = userName || reduxName;
+
+  useEffect(() => {
+    const loadRecords = async () => {
+      try {
+        const data = await fetchRecords();
+        console.log('Fetched Records: ', data);
+        setRecords(data);
+      } catch (error) {
+        console.error('Error fetching records:', error);
+      }
+    };
+
+    loadRecords(); // fetch on first mount
+  }, []);
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchRecords().then(setRecords);
+    }
+  }, [isFocused]);
 
   const renderItem = ({ item }) => (
     <View style={styles.recordCard}>
@@ -65,12 +81,11 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        {/* <Text style={styles.emoji}>👨‍🦳</Text> */}
         <Image
           source={require('../assets/images/Profile.png')}
           style={styles.emoji}
         />
-        <Text style={styles.welcome}>Welcome {userName || reduxName} </Text>
+        <Text style={styles.welcome}>Welcome {displayName}</Text>
         <TouchableOpacity style={styles.bellButton}>
           <Ionicons
             name="notifications-outline"
@@ -127,7 +142,7 @@ const HomeScreen = () => {
       <FlatList
         data={records}
         showsVerticalScrollIndicator={false}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()} // Convert id to string
         renderItem={renderItem}
         contentContainerStyle={{
           paddingBottom: metrics.moderateScale(55),
