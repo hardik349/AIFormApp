@@ -98,6 +98,7 @@ const SlideView = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.thumbnailContainer}
       />
+
       <View style={styles.productRow}>
         <Text style={styles.productName}>{productData.name}</Text>
 
@@ -169,6 +170,46 @@ const SlideView = () => {
         </View>
       ) : (
         <View style={styles.authSection}>
+          <View
+            style={{
+              flexDirection: 'row',
+              padding: 20,
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={{ flexDirection: 'column' }}>
+              <Text style={styles.signupText}>Signup and Get</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ height: 18, width: 18 }}>
+                  <Image
+                    source={require('../assets/images/logo.png')}
+                    style={{ height: '100%', width: '100%' }}
+                  />
+                </View>
+
+                <Text style={styles.productPrice2}>
+                  {productData.price} off
+                </Text>
+              </View>
+            </View>
+
+            <View
+              style={{
+                height: 40,
+                width: 120,
+                borderRadius: 8,
+                backgroundColor: '#267550',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 16, color: 'white', fontWeight: '500' }}>
+                Signup Now
+              </Text>
+            </View>
+          </View>
+
           <Text style={styles.couponsHeader}>Your Available Coupons:</Text>
           {coupons.length > 0 ? (
             coupons.map(coupon => (
@@ -186,7 +227,7 @@ const SlideView = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { height: 800 },
+  container: { flex: 1 },
   slide: {
     width: width,
     height: 400,

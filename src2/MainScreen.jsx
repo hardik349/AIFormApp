@@ -5,7 +5,7 @@ import SlideView from './components/SlideView';
 
 const MainScreen = () => {
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <TopBar />
       <SlideView />
     </View>
