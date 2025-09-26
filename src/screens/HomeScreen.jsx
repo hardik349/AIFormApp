@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,39 +11,60 @@ import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { useNavigation, useRoute } from '@react-navigation/native';
+import Tts from 'react-native-tts';
+import {
+  useNavigation,
+  useRoute,
+  useIsFocused,
+} from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import metrics from '../theme/metrics';
-
-const records = [
-  { id: '1', name: 'Sipho Dlamini', date: '02/04/2025' },
-  { id: '2', name: 'Kagiso Mokoena', date: '02/04/2025' },
-  { id: '3', name: 'Elsabe Coetzee', date: '02/04/2025' },
-  { id: '4', name: 'Sarah Jane Smith', date: '02/04/2025' },
-  { id: '5', name: 'Rebecca Louise Adams', date: '02/04/2025' },
-  { id: '6', name: 'Kagiso Mokoena', date: '02/04/2025' },
-  { id: '7', name: 'Elsabe Coetzee', date: '02/04/2025' },
-  { id: '8', name: 'Sarah Jane Smith', date: '02/04/2025' },
-  { id: '9', name: 'Rebecca Louise Adams', date: '02/04/2025' },
-];
+import { fetchRecords } from '../database/dbService';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
   const route = useRoute();
   const { userName } = route.params || {};
   const reduxName = useSelector(state => state.user.name);
 
+  const [records, setRecords] = useState([]); // Local state for DB records
+
+  const displayName = userName || reduxName;
+
+  useEffect(() => {
+    const loadRecords = async () => {
+      try {
+        const data = await fetchRecords();
+        console.log('Fetched Records: ', data);
+        setRecords(data);
+      } catch (error) {
+        console.error('Error fetching records:', error);
+      }
+    };
+
+    loadRecords(); // fetch on first mount
+  }, []);
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchRecords().then(setRecords);
+    }
+  }, [isFocused]);
+
   const renderItem = ({ item }) => (
     <View style={styles.recordCard}>
       <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+        <Text style={styles.avatarText}>{item.builderName.charAt(0)}</Text>
       </View>
       <View style={styles.recordInfo}>
-        <Text style={styles.recordName}>{item.name}</Text>
+        <Text style={styles.recordName}>{item.builderName}</Text>
         <Text style={styles.recordDate}>{item.date}</Text>
       </View>
-      <TouchableOpacity style={styles.viewMore}>
+      <TouchableOpacity
+        style={styles.viewMore}
+        onPress={() => navigation.navigate('RecordDetails', { record: item })}
+      >
         <Text style={styles.viewText}>View More</Text>
         <View style={styles.viewMoreIcon}>
           <Feather
@@ -60,12 +81,11 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        {/* <Text style={styles.emoji}>👨‍🦳</Text> */}
         <Image
           source={require('../assets/images/Profile.png')}
           style={styles.emoji}
         />
-        <Text style={styles.welcome}>Welcome {userName || reduxName} </Text>
+        <Text style={styles.welcome}>Welcome {displayName}</Text>
         <TouchableOpacity style={styles.bellButton}>
           <Ionicons
             name="notifications-outline"
@@ -109,7 +129,10 @@ const HomeScreen = () => {
       {/* Recent Records */}
       <View style={styles.recordsHeader}>
         <Text style={styles.recordsTitle}>Recent Records</Text>
-        <TouchableOpacity style={styles.seeAllContainer}>
+        <TouchableOpacity
+          style={styles.seeAllContainer}
+          onPress={() => navigation.navigate('AllRecords', { records })}
+        >
           <Text style={styles.seeAll}>See all</Text>
           <Ionicons
             name="chevron-forward"
@@ -122,9 +145,17 @@ const HomeScreen = () => {
       <FlatList
         data={records}
         showsVerticalScrollIndicator={false}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()} // Convert id to string
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: metrics.moderateScale(55) }}
+        contentContainerStyle={{
+          paddingBottom: metrics.moderateScale(55),
+          flexGrow: 1,
+        }}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No records added</Text>
+          </View>
+        )}
       />
     </SafeAreaView>
   );
@@ -270,5 +301,16 @@ const styles = StyleSheet.create({
     color: '#9b8ef9',
     marginRight: metrics.moderateScale(5),
     fontSize: metrics.moderateScale(12),
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: metrics.moderateScale(50),
+  },
+  emptyText: {
+    color: '#aaa',
+    fontSize: metrics.moderateScale(14),
+    fontFamily: 'Inter_18pt-Medium',
   },
 });

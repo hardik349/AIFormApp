@@ -5,13 +5,15 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
-import FormScreen from '../screens/FormScreen';
+
 import WelcomeScreen from '../screens/WelcomeScreen';
 import InspectionListScreen from '../screens/InpectionsListScreen';
 import SplashScreen from '../screens/SplashScreen';
 import GetStartedScreen from '../screens/GetStartedScreen';
 import AddDetailsScreen from '../screens/AddDetailsScreen';
 import BottomTabs from './BottomTabs';
+import RecordDetailsScreen from '../screens/RecordDetailScreen';
+import AllRecordsScreen from '../screens/AllRecordsScreen';
 
 const Stack = createStackNavigator();
 
@@ -30,7 +32,8 @@ const AppNavigation = () => {
         <Stack.Screen name="InspectionList" component={InspectionListScreen} />
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="AddDetails" component={AddDetailsScreen} />
-        <Stack.Screen name="Form" component={FormScreen} />
+        <Stack.Screen name="RecordDetails" component={RecordDetailsScreen} />
+        <Stack.Screen name="AllRecords" component={AllRecordsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

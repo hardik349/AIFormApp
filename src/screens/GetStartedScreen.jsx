@@ -60,8 +60,8 @@ const GetStartedScreen = () => {
       <LoginOptions optionText="Continue with Apple" iconType="apple" />
       <View style={styles.SignUpContainer}>
         <Text style={styles.SignUpText}>Already Have an Account ?</Text>
-        <TouchableOpacity style={styles.SignUpButton} onPress={handleSignUp}>
-          <Text style={styles.highlight}>Sign up</Text>
+        <TouchableOpacity style={styles.SignUpButton} onPress={handleLogin}>
+          <Text style={styles.highlight}>Sign In</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>

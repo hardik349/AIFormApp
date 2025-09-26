@@ -65,7 +65,7 @@ const LoginScreen = () => {
             onChangeText={() => {}}
           />
           <InputText
-            placeholder="Password"
+            placeholder="Confirm Password"
             value=""
             error=""
             icon="lock"

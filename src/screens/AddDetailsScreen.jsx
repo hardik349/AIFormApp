@@ -23,6 +23,10 @@ import Toast from 'react-native-toast-message';
 import { launchCamera } from 'react-native-image-picker';
 import { useVoiceExtractor } from '../Hook/useVoiceExtractor';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
+import { addRecord } from '../redux/recordSlice';
+import Tts from 'react-native-tts';
+import { initDB, insertRecord } from '../database/dbService';
 
 const RenderInput = React.memo(
   ({
@@ -90,7 +94,7 @@ const RenderInput = React.memo(
 );
 
 const AddDetailsScreen = () => {
-  // ------------------- FORM STATE -------------------
+  const dispatch = useDispatch();
   const [info, setInfo] = useState({
     builderName: '',
     address: '',
@@ -126,6 +130,17 @@ const AddDetailsScreen = () => {
     );
 
   useEffect(() => {
+    const setupDB = async () => {
+      try {
+        await initDB();
+      } catch (error) {
+        console.log('DB setup error:', error);
+      }
+    };
+    setupDB();
+  }, []);
+
+  useEffect(() => {
     micStatusRef.current = micStatus;
   }, [micStatus]);
 
@@ -136,16 +151,22 @@ const AddDetailsScreen = () => {
         setInfo(prev => ({ ...prev, [currentField]: value }));
         setFilled(prev => ({ ...prev, [currentField]: 'filled' }));
 
-        // Move to next field if available
         if (currentFieldIndex < fieldOrder.length - 1) {
           setCurrentFieldIndex(prev => prev + 1);
         }
+      } else {
+        Tts.speak(`I couldn't catch that. Please say the ${currentField}`);
+        setTimeout(() => {
+          startListening();
+          setMicStatus('listening');
+        }, 1500);
       }
       stopListening?.();
       setMicStatus('stopped');
     }
   }, [extractedData]);
 
+  // 👇 update mic timeout handler
   useEffect(() => {
     if (listenTimeoutRef.current) {
       clearTimeout(listenTimeoutRef.current);
@@ -156,12 +177,12 @@ const AddDetailsScreen = () => {
         if (micStatusRef.current === 'listening') {
           stopListening?.();
           setMicStatus('idle');
-          Toast.show({
-            type: 'error',
-            text1: 'Not recognized… try again',
-            position: 'top',
-            visibilityTime: 2500,
-          });
+          // Retry same field after timeout
+          Tts.speak(`Please try again, say the ${currentField}`);
+          setTimeout(() => {
+            startListening();
+            setMicStatus('listening');
+          }, 1500);
         }
       }, 5000);
     }
@@ -171,30 +192,24 @@ const AddDetailsScreen = () => {
         listenTimeoutRef.current = null;
       }
     };
-  }, [micStatus, stopListening]);
+  }, [micStatus, stopListening, currentField]);
+
+  useEffect(() => {
+    const guideAndListen = async () => {
+      if (!allFieldsFilled && micStatus !== 'listening') {
+        const field = fieldOrder[currentFieldIndex];
+        const message = `Please say the ${field.replace(/([A-Z])/g, ' $1')}`;
+        Tts.speak(message);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        startListening();
+        setMicStatus('listening');
+      }
+    };
+    guideAndListen();
+  }, [currentFieldIndex, allFieldsFilled]);
 
   const handleBack = () => {
     navigation.goBack();
-  };
-
-  const handleMicButtonPress = async () => {
-    const state = await NetInfo.fetch();
-    if (!state.isConnected) {
-      Toast.show({
-        type: 'error',
-        text1: 'No internet connection',
-        position: 'top',
-        visibilityTime: 2500,
-      });
-      return;
-    }
-    if (isListening) {
-      stopListening();
-      setMicStatus('stopped');
-    } else {
-      startListening();
-      setMicStatus('listening');
-    }
   };
 
   // ------------------- DATE PICKER -------------------
@@ -207,14 +222,14 @@ const AddDetailsScreen = () => {
       const formatted = selectedDate.toLocaleDateString('en-GB');
       setInfo(prev => ({ ...prev, date: formatted }));
       setFilled(prev => ({ ...prev, date: 'filled' }));
-      // if date was active, advance
+
       if (currentField === 'date') {
-        setCurrentFieldIndex(fieldOrder.length - 1); // last step stays
+        setCurrentFieldIndex(fieldOrder.length - 1);
       }
     }
   };
 
-  const [media, setMedia] = useState([]); // array of {uri, type}
+  const [media, setMedia] = useState([]);
 
   const openCamera = () => {
     Alert.alert('Choose Media Type', 'Capture Photo or Record Video?', [
@@ -257,9 +272,28 @@ const AddDetailsScreen = () => {
   };
 
   const [alertVisible, setAlertVisible] = useState(false);
-  const handleSubmit = () => setAlertVisible(true);
 
-  // ------------------- PROGRESS -------------------
+  const handleSubmit = async () => {
+    if (!allFieldsFilled) return;
+
+    try {
+      await initDB();
+      await insertRecord(
+        info.builderName,
+        info.address,
+        info.buildingName,
+        info.date,
+        media,
+      );
+
+      dispatch(addRecord({ ...info, media }));
+
+      setAlertVisible(true);
+    } catch (error) {
+      console.error('Error inserting record:', error);
+    }
+  };
+
   const stepsDone = Object.values(filled).filter(s => s === 'filled').length;
   const progressPercent = (stepsDone / fieldOrder.length) * 100;
 
@@ -272,18 +306,15 @@ const AddDetailsScreen = () => {
       >
         <HandleBack handleBack={handleBack} />
 
-        {/* Header */}
         <Text style={styles.title}>Add New Details</Text>
-        <Text style={styles.subtitle}>Sub-title goes here</Text>
+        <Text style={styles.subtitle}>AI will guide you step by step</Text>
 
-        {/* Progress bar */}
         <View style={styles.progressTrack}>
           <View
             style={[styles.progressFill, { width: `${progressPercent}%` }]}
           />
         </View>
 
-        {/* Inputs */}
         <View style={{ gap: verticalScale(12), marginTop: verticalScale(8) }}>
           <RenderInput
             fieldKey="builderName"
@@ -324,7 +355,6 @@ const AddDetailsScreen = () => {
             fieldOrder={fieldOrder}
           />
 
-          {/* Date as button input */}
           <TouchableOpacity
             style={[
               styles.inputContainer,
@@ -364,7 +394,6 @@ const AddDetailsScreen = () => {
           )}
         </View>
 
-        {/* Upload Images / Videos */}
         <TouchableOpacity style={styles.uploadBtn} onPress={openCamera}>
           <Text style={styles.uploadText}>Upload Images</Text>
           <Ionicons
@@ -374,7 +403,6 @@ const AddDetailsScreen = () => {
           />
         </TouchableOpacity>
 
-        {/* Thumbnails */}
         {media.length > 0 && (
           <View style={styles.thumbContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -392,7 +420,6 @@ const AddDetailsScreen = () => {
           </View>
         )}
 
-        {/* Submit */}
         <TouchableOpacity
           style={[
             styles.submitBtn,
@@ -408,33 +435,8 @@ const AddDetailsScreen = () => {
             color="#262626"
           />
         </TouchableOpacity>
-
-        {/* Voice Mic */}
-        <View style={styles.voiceContainer}>
-          <TouchableOpacity onPress={handleMicButtonPress} activeOpacity={0.8}>
-            <LinearGradient
-              colors={['#9CFFAC', '#88C2FF', '#C2A5FF', '#FFADDB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.micCircle}
-            >
-              <Ionicons
-                name="mic-outline"
-                size={moderateScale(28)}
-                color={micStatus === 'listening' ? '#ff3333' : '#000'}
-              />
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <Text style={styles.voiceText}>
-            {micStatus === 'listening'
-              ? `Listening for ${currentField}…`
-              : `Tap to speak ${currentField}`}
-          </Text>
-        </View>
       </ScrollView>
 
-      {/* Success Alert Modal */}
       <Modal
         visible={alertVisible}
         transparent
@@ -457,7 +459,11 @@ const AddDetailsScreen = () => {
               Your details have been added successfully and are now securely
               stored in our system.
             </Text>
-            <TouchableOpacity onPress={() => setAlertVisible(false)}>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('BottomTab', { screen: 'Home' })
+              }
+            >
               <Text style={styles.goBackText}>Go Back</Text>
             </TouchableOpacity>
           </View>

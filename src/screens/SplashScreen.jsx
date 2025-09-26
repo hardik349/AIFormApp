@@ -17,7 +17,7 @@ const SplashScreen = () => {
     }).start(() => {
       // After fade in complete, wait 1s then navigate
       setTimeout(() => {
-        navigation.replace('Login');
+        navigation.replace('GetStarted');
       }, 800);
     });
   }, []);
