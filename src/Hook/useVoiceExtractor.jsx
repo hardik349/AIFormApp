@@ -1,50 +1,58 @@
 import { useEffect, useState } from 'react';
 import Voice from '@react-native-voice/voice';
-import Tts from 'react-native-tts';
-import { executeCommand } from '../utils/CommandExecutor';
 
-const OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY';
+const OPENAI_API_KEY =
+  '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';
 
-export const useJarvisVoice = () => {
+export const useVoiceExtractor = schemaPrompt => {
   const [isListening, setIsListening] = useState(false);
+  const [extractedData, setExtractedData] = useState({});
 
   const handleResults = async result => {
-    const spokenText = result?.value?.[0] || '';
-    console.log('🎤 Speech:', spokenText);
+    if (result?.value?.length > 0) {
+      const spokenText = result.value[0];
+      console.log('🎤 Speech:', spokenText);
 
-    try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: `
-                You are Jarvis, an AI assistant. Convert user speech to one of these commands exactly:
-                "call ajay", "message ajay", "open camera", "open youtube".
-                If it doesn’t match any, reply with "unknown".
-              `,
-            },
-            { role: 'user', content: spokenText },
-          ],
-        }),
-      });
+      try {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: schemaPrompt },
+              { role: 'user', content: spokenText },
+            ],
+            temperature: 0,
+          }),
+        });
 
-      const data = await res.json();
-      const command =
-        data?.choices?.[0]?.message?.content?.trim().toLowerCase() || 'unknown';
+        const data = await res.json();
+        console.log('🔹 AI Raw Response:', data);
 
-      console.log('🔹 AI Command:', command);
+        let extracted = {};
+        const content =
+          data?.choices?.[0]?.message?.content ||
+          data?.choices?.[0]?.message ||
+          '';
 
-      Tts.speak(`Executing ${command}`);
-      await executeCommand(command);
-    } catch (err) {
-      console.error('❌ OpenAI Error:', err);
+        if (content) {
+          try {
+            extracted = JSON.parse(content.trim());
+          } catch {
+            const match = content.match(/\{[\s\S]*\}/);
+            if (match) extracted = JSON.parse(match[0]);
+          }
+        }
+
+        console.log('✅ Extracted JSON:', extracted);
+        setExtractedData(extracted);
+      } catch (err) {
+        console.error('❌ API Error:', err);
+      }
     }
   };
 
@@ -53,16 +61,17 @@ export const useJarvisVoice = () => {
       setIsListening(true);
 
       Voice.onSpeechResults = handleResults;
-      Voice.onSpeechEnd = () => setIsListening(false);
+      Voice.onSpeechEnd = () => {
+        console.log('🎤 Speech ended');
+        setIsListening(false);
+      };
       Voice.onSpeechError = err => {
         console.log('❌ Speech error', err);
         setIsListening(false);
       };
-
       await Voice.start('en-US');
-    } catch (err) {
-      console.error('❌ Voice Start Error:', err);
-      setIsListening(false);
+    } catch (error) {
+      console.error('❌ Voice Start Error:', error);
     }
   };
 
@@ -70,17 +79,19 @@ export const useJarvisVoice = () => {
     try {
       await Voice.stop();
       setIsListening(false);
+
       Voice.destroy().then(Voice.removeAllListeners);
-    } catch (err) {
-      console.error('❌ Voice Stop Error:', err);
+    } catch (error) {
+      console.error('❌ Voice Stop Error:', error);
     }
   };
 
+  // screen change hone pe cleanup
   useEffect(() => {
     return () => {
       Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
 
-  return { isListening, startListening, stopListening };
+  return { isListening, extractedData, startListening, stopListening };
 };
