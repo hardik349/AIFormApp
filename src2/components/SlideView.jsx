@@ -169,56 +169,97 @@ const SlideView = () => {
           </View>
         </View>
       ) : (
-        <View style={styles.authSection}>
-          <View
-            style={{
-              flexDirection: 'row',
-              padding: 20,
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <View style={{ flexDirection: 'column' }}>
-              <Text style={styles.signupText}>Signup and Get</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{ height: 18, width: 18 }}>
-                  <Image
-                    source={require('../assets/images/logo.png')}
-                    style={{ height: '100%', width: '100%' }}
-                  />
-                </View>
+        <View>
+          <View style={styles.authSection}>
+            <View
+              style={{
+                flexDirection: 'row',
+                padding: 20,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'column' }}>
+                <Text style={styles.signupText}>Signup and Get</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ height: 18, width: 18 }}>
+                    <Image
+                      source={require('../assets/images/logo.png')}
+                      style={{ height: '100%', width: '100%' }}
+                    />
+                  </View>
 
-                <Text style={styles.productPrice2}>
-                  {productData.price} off
+                  <Text style={styles.productPrice2}>
+                    {productData.price} off
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={{
+                  height: 40,
+                  width: 120,
+                  borderRadius: 8,
+                  backgroundColor: '#267550',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  style={{ fontSize: 16, color: 'white', fontWeight: '500' }}
+                >
+                  Signup Now
                 </Text>
               </View>
             </View>
-
-            <View
-              style={{
-                height: 40,
-                width: 120,
-                borderRadius: 8,
-                backgroundColor: '#267550',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 16, color: 'white', fontWeight: '500' }}>
-                Signup Now
-              </Text>
-            </View>
           </View>
 
-          <Text style={styles.couponsHeader}>Your Available Coupons:</Text>
           {coupons.length > 0 ? (
-            coupons.map(coupon => (
-              <Text key={coupon.id} style={styles.couponItem}>
-                - {coupon.code}: {coupon.discount}
-              </Text>
-            ))
+            <View style={{ paddingHorizontal: 20, marginBottom: 40 }}>
+              <FlatList
+                data={coupons}
+                keyExtractor={item => item.id.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.list}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.couponCard}>
+                    <View
+                      style={{
+                        flex: 1,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <View style={{ flexDirection: 'column' }}>
+                        <Text style={styles.couponCode}>{item.code}</Text>
+                        <Text style={styles.discount}>{item.discount}</Text>
+                      </View>
+
+                      <View
+                        style={{
+                          backgroundColor: 'white',
+                          paddingHorizontal: 25,
+                          paddingVertical: 8,
+                          borderRadius: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderWidth: 1,
+                          marginLeft: 20,
+                        }}
+                      >
+                        <Text style={{ fontWeight: '700' }}>TOYS10</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
           ) : (
-            <Text>No coupons available at the moment.</Text>
+            <Text style={styles.emptyText}>
+              No coupons available at the moment.
+            </Text>
           )}
         </View>
       )}
@@ -330,6 +371,39 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 15,
+  },
+
+  header: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  list: {
+    paddingHorizontal: 8,
+  },
+  couponCard: {
+    backgroundColor: '#e8e8e8ff',
+    borderRadius: 12,
+    padding: 5,
+    marginRight: 5,
+    width: 280,
+    height: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  couponCode: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000ff',
+  },
+  discount: {
+    fontSize: 14,
+    color: '#333',
+    marginTop: 6,
+  },
+  emptyText: {
+    color: '#999',
+    fontStyle: 'italic',
   },
 });
 
